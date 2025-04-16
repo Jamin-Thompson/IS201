@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Pong Game" />
+    <meta name="author" content="Jamin Thompson" />
+    <title>Pong Game - Jamin Thompson</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #000;
+        font-family: Arial, sans-serif;
+        flex-direction: column;
+        position: relative;
+      }
+      canvas {
+        border: 2px solid #fff;
+      }
+      #score {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 2rem;
+        color: #fff;
+      }
+      #start-btn {
+        margin-top: 20px;
+        padding: 15px 30px;
+        font-size: 1.5rem;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #start-btn:hover {
+        background-color: #218838;
+      }
+      #home-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        font-size: 1rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #home-btn:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="pong" width="800" height="400"></canvas>
+    <div id="score"></div>
+    <button id="start-btn">Start Game</button>
+    <button id="home-btn" onclick="window.location.href='scratch.html'">Return</button>
+
+    <script>
+      const canvas = document.getElementById("pong");
+      const ctx = canvas.getContext("2d");
+
+      // Game constants
+      const paddleWidth = 10,
+        paddleHeight = 100,
+        ballSize = 10;
+      let leftPaddleY = (canvas.height - paddleHeight) / 2;
+      let rightPaddleY = (canvas.height - paddleHeight) / 2;
+      let ballX = canvas.width / 2,
+        ballY = canvas.height / 2;
+      let ballSpeedX = 4,
+        ballSpeedY = 4;
+
+      let leftPaddleSpeed = 0;
+      let rightPaddleSpeed = 0;
+
+      // Scores
+      let playerScore = 0;
+      let computerScore = 0;
+
+      // Initial ball speed
+      const initialBallSpeedX = 4;
+      const initialBallSpeedY = 4;
+
+      let gameStarted = false; // To track if the game is started
+
+      // Draw paddles and ball
+      function draw() {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Left paddle
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, leftPaddleY, paddleWidth, paddleHeight);
+
+        // Right paddle (computer)
+        ctx.fillRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, paddleHeight);
+
+        // Ball
+        ctx.fillRect(ballX, ballY, ballSize, ballSize);
+
+        // Draw score
+        ctx.font = "30px Arial";
+        ctx.fillText(`Player: ${playerScore} - Computer: ${computerScore}`, canvas.width / 2 - 100, 30);
+      }
+
+      // Move paddles
+      function movePaddles() {
+        leftPaddleY += leftPaddleSpeed;
+
+        // Move computer paddle (right side) with random AI movement
+        if (ballY > rightPaddleY + paddleHeight / 2) {
+          rightPaddleY += 4 + Math.random() * 2; // AI with some variation in speed
+        } else if (ballY < rightPaddleY + paddleHeight / 2) {
+          rightPaddleY -= 4 + Math.random() * 2; // AI with some variation in speed
+        }
+
+        // Keep paddles within bounds
+        if (leftPaddleY < 0) leftPaddleY = 0;
+        if (leftPaddleY > canvas.height - paddleHeight) leftPaddleY = canvas.height - paddleHeight;
+        if (rightPaddleY < 0) rightPaddleY = 0;
+        if (rightPaddleY > canvas.height - paddleHeight) rightPaddleY = canvas.height - paddleHeight;
+      }
+
+      // Move ball
+      function moveBall() {
+        ballX += ballSpeedX;
+        ballY += ballSpeedY;
+
+        // Ball bouncing off top and bottom
+        if (ballY <= 0 || ballY >= canvas.height - ballSize) {
+          ballSpeedY = -ballSpeedY;
+        }
+
+        // Ball collision with paddles
+        if (
+          ballX <= paddleWidth &&
+          ballY >= leftPaddleY &&
+          ballY <= leftPaddleY + paddleHeight
+        ) {
+          ballSpeedX = -ballSpeedX;
+          increaseBallSpeed(); // Increase speed when hitting left paddle
+        }
+        if (
+          ballX >= canvas.width - paddleWidth - ballSize &&
+          ballY >= rightPaddleY &&
+          ballY <= rightPaddleY + paddleHeight
+        ) {
+          ballSpeedX = -ballSpeedX;
+          increaseBallSpeed(); // Increase speed when hitting right paddle
+        }
+
+        // Ball out of bounds (left side - player loses a point)
+        if (ballX <= 0) {
+          computerScore++;
+          resetBall();
+        }
+
+        // Ball out of bounds (right side - computer loses a point)
+        if (ballX >= canvas.width) {
+          playerScore++;
+          resetBall();
+        }
+      }
+
+      // Increase ball speed by 8% after each hit (without scoring)
+      function increaseBallSpeed() {
+        ballSpeedX *= 1.08;
+        ballSpeedY *= 1.08;
+      }
+
+      // Reset ball to the center
+      function resetBall() {
+        ballX = canvas.width / 2;
+        ballY = canvas.height / 2;
+        ballSpeedX = initialBallSpeedX; // Reset ball speed
+        ballSpeedY = initialBallSpeedY; // Reset ball speed
+      }
+
+      // Control paddles with keyboard
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowUp" || event.key === "w") leftPaddleSpeed = -4;
+        if (event.key === "ArrowDown" || event.key === "s") leftPaddleSpeed = 4;
+        if (event.key === "ArrowUp") rightPaddleSpeed = -4;
+        if (event.key === "ArrowDown") rightPaddleSpeed = 4;
+      });
+
+      document.addEventListener("keyup", function (event) {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          leftPaddleSpeed = 0;
+        }
+      });
+
+      // Start game when the button is clicked
+      document.getElementById("start-btn").addEventListener("click", function () {
+        gameStarted = true;
+        this.style.display = "none"; // Hide the start button
+        gameLoop();
+      });
+
+      // Update game loop
+      function gameLoop() {
+        if (gameStarted) {
+          movePaddles();
+          moveBall();
+          draw();
+          checkWinner();
+          requestAnimationFrame(gameLoop);
+        }
+      }
+
+      // Check if anyone won the game (first to 5 points)
+      function checkWinner() {
+        if (playerScore === 5) {
+          alert("You win!");
+          resetGame();
+        } else if (computerScore === 5) {
+          alert("Computer wins!");
+          resetGame();
+        }
+      }
+
+      // Reset the game
+      function resetGame() {
+        playerScore = 0;
+        computerScore = 0;
+        resetBall();
+        gameStarted = false;
+        document.getElementById("start-btn").style.display = "block"; // Show start button again
+      }
+    </script>
+  </body>
+</html>
+
